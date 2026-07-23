@@ -7,10 +7,17 @@ export class UserManager {
     private users = new Map<WebSocket, User>();
 
     createUser(socket: WebSocket, name: string): User {
+
+        const existingUser = this.users.get(socket);
+        if (existingUser) {
+            return existingUser;
+        }
+
         const user: User = {
             id: crypto.randomUUID(),
             name,
             socket,
+            roomId : undefined,
         };
 
         this.users.set(socket, user);

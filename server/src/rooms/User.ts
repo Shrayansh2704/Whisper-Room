@@ -4,5 +4,5 @@ export interface User{
     id : string;
     name : string;
     socket : WebSocket;
-    roomId? : string;
+    roomId : string | undefined;
 }

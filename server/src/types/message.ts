@@ -11,9 +11,18 @@ export enum MessageType {
     USER_LEFT = "USER_LEFT",
 
     LEAVE_ROOM = "LEAVE_ROOM",
+    ROOM_LEFT = "ROOM_LEFT",
     DESTROY_ROOM = "DESTROY_ROOM",
     
     SEND_MESSAGE = "SEND_MESSAGE",
+
+    KICK_USER = "KICK_USER",
+    USER_KICKED = "USER_KICKED",
+    KICK_SUCCESS = "KICK_SUCCESS",
+
+    TRANSFER_ADMIN = "TRANSFER_ADMIN",
+
+    ADMIN_CHANGED = "ADMIN_CHANGED",
 
     ERROR = "ERROR",
 }
@@ -40,4 +49,19 @@ export interface JoinRoomPayload{
 export interface UserJoinedPayload {
     id: string;
     name: string;
+}
+
+
+export interface UserLeftPayload{
+    id : string;
+    name : string;
+}
+
+export interface AdminChangedPayload{
+    id : string;
+    name : string;
+}
+
+export interface KickUserPayload{
+    userId : string;
 }

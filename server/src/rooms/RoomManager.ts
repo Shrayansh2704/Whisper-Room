@@ -48,7 +48,64 @@ export class RoomManager {
         }
 
         return true;
-    }  
+    }
+    
+    leaveRoom(user : User):{
+        roomId : string;
+        newAdmin?: User;
+        deleted : boolean;
+    } | null{
+        if(!user.roomId) return null;
+        const room = this.rooms.get(user.roomId);
+        if(!room) return null;
+        const roomId = room.id;
+        room.users.delete(user.id);
+        user.roomId = undefined;
+        if(room.users.size===0){
+            this.rooms.delete(roomId);
+            return{
+                roomId,
+                deleted : true,
+            };
+        }
+
+        if(room.adminId===user.id){
+            const newAdmin = room.users.values().next().value as User;
+            room.adminId = newAdmin.id;
+
+            return{
+                roomId, 
+                deleted : false,
+                newAdmin,
+            };
+        }
+
+        return{
+            roomId,
+            deleted : false,
+        };
+    }
+
+    kickUser(admin: User, userId:string) : {
+        roomId : string;
+        kickedUser : User;
+    } | null{
+        if(!admin.roomId) return null;
+        const room = this.rooms.get(admin.roomId);
+        if(!room) return null;
+        if(room.adminId!=admin.id) return null;
+        if (admin.id === userId) return null;
+        const kickedUser = room.users.get(userId);
+        if(!kickedUser) return null;
+        room.users.delete(userId);
+        kickedUser.roomId = undefined;
+        return{
+            roomId : room.id,
+            kickedUser,
+        };
+    }
+
+
 }
 
 export const roomManager = new RoomManager();

@@ -4,6 +4,7 @@ import {
     ClientMessage,
     CreateRoomPayload,
     JoinRoomPayload,
+    KickUserPayload,
     MessageType,
 } from "../types/message.js";
 
@@ -34,9 +35,6 @@ export function handleMessage(
                     },
                 })
             );
-
-            console.log(`${user.name} created room ${roomId}`);
-
             break;
         }
 
@@ -75,6 +73,113 @@ export function handleMessage(
                 },
             });
             break;   
+        }
+
+        case MessageType.LEAVE_ROOM: {
+            const user = userManager.getUser(socket);
+            if(!user){
+                socket.send(
+                    JSON.stringify({
+                        type : MessageType.ERROR,
+                        payload: {
+                            message : "User not Found",
+                        },
+                    })
+                );
+                break ;
+            }
+
+            const result = roomManager.leaveRoom(user);
+            if(!result){
+                socket.send(
+                    JSON.stringify({
+                        type : MessageType.ERROR,
+                        payload: {
+                            message : "you are not in any room",
+                        },
+                    })
+                );
+                break ;
+            }
+
+            socket.send(
+                JSON.stringify({
+                    type : MessageType.ROOM_LEFT,
+                    payload: {},
+                })
+            );
+            roomManager.broadcast(result.roomId, {
+                type: MessageType.USER_LEFT,
+                payload: {
+                    id: user.id,
+                    name: user.name,
+                },
+            });
+
+            if (result.newAdmin) {
+                roomManager.broadcast(result.roomId, {
+                    type: MessageType.ADMIN_CHANGED,
+                    payload: {
+                        id: result.newAdmin.id,
+                        name: result.newAdmin.name,
+                    },
+                });
+            }
+
+            break;
+        }
+
+        case MessageType.KICK_USER: {
+            const admin = userManager.getUser(socket);
+            if(!admin){
+                socket.send(
+                    JSON.stringify({
+                        type : MessageType.ERROR,
+                        payload : {
+                            message : "User not Found",
+                        },
+                    })
+                );
+                break;
+            }
+
+            const payload = message.payload as KickUserPayload;
+            const result = roomManager.kickUser(admin, payload.userId);
+            if(!result){
+                socket.send(
+                    JSON.stringify({
+                        type : MessageType.ERROR,
+                        payload : {
+                            message : "Kicked Failed . Either you are not admin or user does not exist",
+                        },
+                    })
+                );
+                break;
+            }
+            result.kickedUser.socket.send(
+                JSON.stringify({
+                    type : MessageType.USER_KICKED,
+                    payload : {
+                        message : "You were removed by the admin"
+                    },
+                })
+            );
+            socket.send(
+                JSON.stringify({
+                    type: MessageType.KICK_SUCCESS,
+                    payload: {
+                        userId: result.kickedUser.id,
+                    },
+                })
+            );
+            roomManager.broadcast(result.roomId, {
+                type: MessageType.USER_LEFT,
+                payload: {
+                    id: result.kickedUser.id,
+                    name: result.kickedUser.name,
+                },
+            });
+            break;
         }
 
         default:
