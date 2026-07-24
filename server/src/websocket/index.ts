@@ -52,7 +52,7 @@ export function setupWebSocketServer(server : http.Server){
             }
 
             userManager.removeUser(socket);
-            console.log("${user.name} Disconnected");
+            console.log(`${user.name} Disconnected`);
         });
     });
 

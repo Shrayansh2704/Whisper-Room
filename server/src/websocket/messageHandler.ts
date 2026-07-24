@@ -6,6 +6,7 @@ import {
     JoinRoomPayload,
     KickUserPayload,
     MessageType,
+    SendMessagePayload,
 } from "../types/message.js";
 
 import { roomManager } from "../rooms/RoomManager.js";
@@ -177,6 +178,43 @@ export function handleMessage(
                 payload: {
                     id: result.kickedUser.id,
                     name: result.kickedUser.name,
+                },
+            });
+            break;
+        }
+
+        case MessageType.SEND_MESSAGE: {
+            const user = userManager.getUser(socket);
+            if(!user){
+                socket.send(
+                    JSON.stringify({
+                        type : MessageType.ERROR,
+                        payload: {
+                            message : "User Not Found",
+                        },
+                    })
+                );
+                break;
+            }
+
+            if(!user.roomId){
+                socket.send(
+                    JSON.stringify({
+                        type : MessageType.ERROR,
+                        payload : {
+                            message : "You are not in a room",
+                        },
+                    })
+                );
+                break;
+            }
+            const payload = message.payload as SendMessagePayload;
+            roomManager.broadcast(user.roomId, {
+                type : MessageType.MESSAGE_RECEIVED,
+                payload : {
+                    senderId : user.id,
+                    senderName : user.name,
+                    message : payload.message,
                 },
             });
             break;

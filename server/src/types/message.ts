@@ -15,6 +15,8 @@ export enum MessageType {
     DESTROY_ROOM = "DESTROY_ROOM",
     
     SEND_MESSAGE = "SEND_MESSAGE",
+    MESSAGE_RECEIVED = "MESSAGE_RECEIVED",
+
 
     KICK_USER = "KICK_USER",
     USER_KICKED = "USER_KICKED",
@@ -23,6 +25,7 @@ export enum MessageType {
     TRANSFER_ADMIN = "TRANSFER_ADMIN",
 
     ADMIN_CHANGED = "ADMIN_CHANGED",
+
 
     ERROR = "ERROR",
 }
@@ -64,4 +67,8 @@ export interface AdminChangedPayload{
 
 export interface KickUserPayload{
     userId : string;
+}
+
+export interface SendMessagePayload{
+    message : string;
 }
