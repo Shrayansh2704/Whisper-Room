@@ -1,11 +1,14 @@
 import { WebSocket } from "ws";
 
 import {
+    AnswerPayload,
     ClientMessage,
     CreateRoomPayload,
+    IceCandidatePayload,
     JoinRoomPayload,
     KickUserPayload,
     MessageType,
+    OfferPayload,
     SendMessagePayload,
 } from "../types/message.js";
 
@@ -218,6 +221,138 @@ export function handleMessage(
                 },
             });
             break;
+        }
+
+        case MessageType.OFFER: {
+            const sender = userManager.getUser(socket);
+            if(!sender){
+                socket.send(
+                    JSON.stringify({
+                        type : MessageType.ERROR,
+                        payload: {
+                            message : "User not Found",
+                        },
+                    })
+                );
+                break;
+            }
+
+            const payload = message.payload as OfferPayload;
+            const target = userManager.getUserById(payload.targetUserId);
+
+            if(!target){
+                socket.send(
+                    JSON.stringify({
+                        type : MessageType.ERROR,
+                        payload : {
+                            message : "Target user not found",
+                        },
+                    })
+                );
+
+                break;
+            }
+
+            target.socket.send(
+                JSON.stringify({
+                    type : MessageType.OFFER,
+                    payload : {
+                        senderId : sender.id,
+                        senderName : sender.name,
+                        offer : payload.offer,
+                    },
+                })
+            );
+
+            break;
+        }
+
+        case MessageType.ANSWER: {
+            const sender = userManager.getUser(socket);
+            if(!sender){
+                socket.send(
+                    JSON.stringify({
+                        type : MessageType.ERROR,
+                        payload : {
+                            message : "User not Found",
+                        },
+                    })
+                );
+                break;
+            }
+
+            const payload = message.payload as AnswerPayload;
+            const target = userManager.getUserById(payload.targetUserId);
+
+            if (!target) {
+                socket.send(
+                    JSON.stringify({
+                        type: MessageType.ERROR,
+                        payload: {
+                            message: "Target user not found.",
+                        },
+                    })
+                );
+                break;
+            }
+
+            target.socket.send(
+                JSON.stringify({
+                    type: MessageType.ANSWER,
+                    payload: {
+                        senderId: sender.id,
+                        senderName: sender.name,
+                        answer: payload.answer,
+                    },
+                })
+            );
+
+            break;
+        }
+
+        case MessageType.ICE_CANDIDATE: {
+            const sender = userManager.getUser(socket);
+            if (!sender) {
+                socket.send(
+                    JSON.stringify({
+                        type: MessageType.ERROR,
+                        payload: {
+                            message: "User not found.",
+                        },
+                    })
+                );
+                break;
+            }
+
+            const payload = message.payload as IceCandidatePayload;
+
+            const target = userManager.getUserById(payload.targetUserId);
+
+            if (!target) {
+                socket.send(
+                    JSON.stringify({
+                        type: MessageType.ERROR,
+                        payload: {
+                            message: "Target user not found.",
+                        },
+                    })
+                );
+                break;
+            }
+
+            target.socket.send(
+                JSON.stringify({
+                    type: MessageType.ICE_CANDIDATE,
+                    payload: {
+                        senderId: sender.id,
+                        senderName: sender.name,
+                        candidate: payload.candidate,
+                    },
+                })
+            );
+
+            break;
+
         }
 
         default:

@@ -32,6 +32,14 @@ export class UserManager {
     removeUser(socket: WebSocket): void {
         this.users.delete(socket);
     }
+
+    getUserById(id: string) : User | undefined {
+        for(const user of this.users.values()){
+            if(user.id===id) return user;
+        }
+
+        return undefined;
+    }
 }
 
 export const userManager = new UserManager();

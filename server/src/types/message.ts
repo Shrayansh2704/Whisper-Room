@@ -26,6 +26,9 @@ export enum MessageType {
 
     ADMIN_CHANGED = "ADMIN_CHANGED",
 
+    OFFER = "OFFER",
+    ANSWER = "ANSWER",
+    ICE_CANDIDATE = "ICE_CANDIDATE",
 
     ERROR = "ERROR",
 }
@@ -72,3 +75,30 @@ export interface KickUserPayload{
 export interface SendMessagePayload{
     message : string;
 }
+export interface SessionDescription{
+    type : "offer" | "answer";
+    sdp : string;
+}
+export interface OfferPayload{
+    targetUserId : string;
+    offer : SessionDescription;
+}
+
+export interface AnswerPayload {
+    targetUserId: string;
+    answer: SessionDescription;
+}
+
+export interface IceCandidate {
+    candidate: string;
+    sdpMid: string | null;
+    sdpMLineIndex: number | null;
+}
+
+export interface IceCandidatePayload{
+    targetUserId : string;
+    candidate : IceCandidate;
+}
+
+
+
