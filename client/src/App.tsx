@@ -1,17 +1,17 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Home from "./pages/Home";
-import ChatRoom from "./pages/ChatRoom";
-import "./App.css";
+
+import HomePage from "./pages/HomePage";
+import MeetingPage from "./pages/MeetingPage";
 
 function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/chat" element={<ChatRoom />} />
-      </Routes>
-    </BrowserRouter>
-  );
+    return (
+        <BrowserRouter>
+            <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/room/:roomId" element={<MeetingPage />} />
+            </Routes>
+        </BrowserRouter>
+    );
 }
 
 export default App;
