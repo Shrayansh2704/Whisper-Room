@@ -1,4 +1,4 @@
-import type { ClientMessage, ServerMessage } from "@/types/message";
+import { type ClientMessage, type ServerMessage } from "@/types/message";
 
 type MessageListener = (message: ServerMessage) => void;
 
@@ -6,25 +6,32 @@ class WebSocketService {
     private socket: WebSocket | null = null;
     private listeners: MessageListener[] = [];
 
-    connect() {
-        if (this.socket) return;
+    async connect(): Promise<void> {
+    if (this.socket) return;
 
+    return new Promise((resolve, reject) => {
         this.socket = new WebSocket("ws://localhost:3000");
 
         this.socket.onopen = () => {
             console.log("✅ Connected");
+            resolve();
         };
 
         this.socket.onmessage = (event) => {
             const message: ServerMessage = JSON.parse(event.data);
 
-            this.listeners.forEach(listener => listener(message));
+            this.listeners.forEach((listener) => listener(message));
         };
 
         this.socket.onclose = () => {
             this.socket = null;
         };
-    }
+
+        this.socket.onerror = () => {
+            reject(new Error("Failed to connect"));
+        };
+    });
+}
 
     send(message: ClientMessage) {
         if (!this.socket) return;
