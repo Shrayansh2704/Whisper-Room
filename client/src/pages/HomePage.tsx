@@ -33,7 +33,7 @@ function HomePage() {
                         roomId: string;
                     };
 
-                    navigate(`/room/${roomId}`, {
+                    navigate(`/chat/${roomId}`, {
                         state: {
                             roomId,
                             name,
@@ -48,7 +48,7 @@ function HomePage() {
                         roomId: string;
                     };
 
-                    navigate(`/room/${roomId}`, {
+                    navigate(`/chat/${roomId}`, {
                         state: {
                             roomId,
                             name,
