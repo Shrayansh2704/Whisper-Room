@@ -7,7 +7,12 @@ import ChatHeader from "@/components/chat/ChatHeader";
 import { MessageCircle } from "lucide-react";
 import websocket from "@/services/websocket";
 
-import { MessageType } from "@/types/message";
+import {
+    MessageType,
+    type ServerMessage,
+    type UserJoinedPayload,
+    type MessageReceivedPayload,
+} from "@/types/message";
 
 interface ChatMessage {
     id: number;
@@ -17,7 +22,7 @@ interface ChatMessage {
 }
 
 interface Participant {
-    id: number;
+    id: string;
     name: string;
     admin: boolean;
 }
@@ -29,26 +34,81 @@ function ChatRoomPage() {
 
     const username = state?.name ?? "Guest";
     useEffect(() => {
-        async function joinRoom() {
-            await websocket.connect();
+        const handleMessage = (message: ServerMessage) => {
+            switch (message.type) {
+                case MessageType.ROOM_JOINED: {
+                    console.log("Joined room:", message.payload);
+                    break;
+                }
 
-            websocket.send({
-                type: MessageType.JOIN_ROOM,
-                payload: {
-                    roomId: roomId ?? "",
-                    name: username,
-                },
-            });
-        }
+                case MessageType.USER_JOINED: {
+                    const payload = message.payload as UserJoinedPayload;
 
-        joinRoom();
+                    // Add user to participants
+                    setParticipants((prev) => {
+                        const alreadyExists = prev.some(
+                            (participant) => participant.id === payload.id
+                        );
+
+                        if (alreadyExists) {
+                            return prev;
+                        }
+
+                        return [
+                            ...prev,
+                            {
+                                id: payload.id,
+                                name: payload.name,
+                                admin: false,
+                            },
+                        ];
+                    });
+
+                    // Show join message in chat
+                    setMessages((prev) => [
+                        ...prev,
+                        {
+                            id: Date.now(),
+                            sender: "System",
+                            text: `${payload.name} joined the room`,
+                            time: new Date().toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                            }),
+                        },
+                    ]);
+
+                    break;
+                }
+
+                case MessageType.MESSAGE_RECEIVED: {
+                    const payload = message.payload as MessageReceivedPayload;
+
+                    setMessages((prev) => [
+                        ...prev,
+                        {
+                            id: Date.now(),
+                            sender: payload.senderName,
+                            text: payload.message,
+                            time: new Date().toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                            }),
+                        },
+                    ]);
+
+                    break;
+                }
+            }
+        };
+
+        websocket.subscribe(handleMessage);
 
         return () => {
-            websocket.disconnect();
+            websocket.unsubscribe(handleMessage);
         };
-    }, [roomId, username]);
+    }, []);
 
-    // Temporary until backend sync
     const [messages, setMessages] = useState<ChatMessage[]>([
         {
             id: 1,
@@ -58,9 +118,9 @@ function ChatRoomPage() {
         },
     ]);
 
-    const [participants] = useState<Participant[]>([
+    const [participants, setParticipants] = useState<Participant[]>([
         {
-            id: 1,
+            id: "local",
             name: username,
             admin: true,
         },
@@ -73,21 +133,18 @@ function ChatRoomPage() {
         [participants, username]
     );
 
+    console.log("PARTICIPANTS:", participants);
+    console.log("USERNAME:", username);
+
     const sendMessage = () => {
         if (!message.trim()) return;
 
-        setMessages((prev) => [
-            ...prev,
-            {
-                id: Date.now(),
-                sender: username,
-                text: message,
-                time: new Date().toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                }),
-            },
-        ]);
+        websocket.send({
+            type: MessageType.SEND_MESSAGE,
+            payload: {
+                message: message.trim(),
+            }
+        });
 
         setMessage("");
     };

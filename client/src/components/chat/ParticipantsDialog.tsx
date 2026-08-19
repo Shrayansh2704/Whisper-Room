@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 
 interface Participant {
-    id: number;
+    id: string;
     name: string;
     admin: boolean;
 }
@@ -25,14 +25,16 @@ function ParticipantsDialog({
 }: ParticipantsDialogProps) {
     return (
         <Dialog>
-            <DialogTrigger>
-                <Button
-                    variant="outline"
-                    className="border-zinc-700"
-                >
-                    <Users className="mr-2 h-4 w-4" />
-                    Participants
-                </Button>
+            <DialogTrigger
+                render={
+                    <Button
+                        variant="outline"
+                        className="border-zinc-700 bg-zinc-900 text-white hover:bg-zinc-800 hover:text-white"
+                    />
+                }
+            >
+                <Users className="mr-2 h-4 w-4" />
+                Participants
             </DialogTrigger>
 
             <DialogContent className="border-zinc-800 bg-zinc-900 text-white">
@@ -51,11 +53,11 @@ function ParticipantsDialog({
                             <div className="flex items-center gap-3">
                                 <Avatar>
                                     <AvatarFallback>
-                                        {user.name[0].toUpperCase()}
+                                        {user.name?.[0]?.toUpperCase() ?? "?"}
                                     </AvatarFallback>
                                 </Avatar>
 
-                                <span>{user.name}</span>
+                                <span>{user.name ?? "Unknown User"}</span>
                             </div>
 
                             {user.admin && (

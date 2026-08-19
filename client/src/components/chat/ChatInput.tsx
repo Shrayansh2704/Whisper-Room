@@ -26,6 +26,7 @@ function ChatInput({
                             sendMessage();
                         }
                     }}
+                    className="text-white placeholder:text-zinc-500"
                 />
 
                 <Button onClick={sendMessage}>

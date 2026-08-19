@@ -69,13 +69,15 @@ function HomePage() {
         return () => {
             websocket.unsubscribe(listener);
         };
-    }, [navigate, name]);
+    }, [navigate]);
 
-    const createRoom = () => {
+    const createRoom = async () => {
         if (!name.trim()) {
             alert("Enter your name");
             return;
         }
+
+        await websocket.connect();
 
         const message: ClientMessage<CreateRoomPayload> = {
             type: MessageType.CREATE_ROOM,
@@ -87,17 +89,19 @@ function HomePage() {
         websocket.send(message);
     };
 
-    const joinRoom = () => {
+    const joinRoom = async () => {
         if (!name.trim() || !roomId.trim()) {
             alert("Enter all fields");
             return;
         }
 
+        await websocket.connect();
+
         const message: ClientMessage<JoinRoomPayload> = {
             type: MessageType.JOIN_ROOM,
             payload: {
-                roomId,
-                name,
+                roomId: roomId.trim(),
+                name: name.trim(),
             },
         };
 

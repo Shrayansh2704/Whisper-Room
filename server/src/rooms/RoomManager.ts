@@ -22,6 +22,8 @@ export class RoomManager {
         };
 
         this.rooms.set(roomId, room);
+        console.log("ROOM CREATED:", roomId);
+        console.log("CURRENT ROOMS:", [...this.rooms.keys()]);
         return roomId;
     }
 
@@ -31,11 +33,16 @@ export class RoomManager {
 
     joinRoom(roomId: string, user: User) : boolean{
         const room = this.rooms.get(roomId);
-        if(!room) return false;
+
+        console.log("JOIN REQUEST:", roomId);
+        console.log("CURRENT ROOMS:", [...this.rooms.keys()]);
+
+        if (!room) return false;
         user.roomId = roomId;
         room.users.set(user.id, user);
         return true;
     }
+
     broadcast(roomId: string, message: ServerMessage): boolean{
         const room = this.rooms.get(roomId);
 

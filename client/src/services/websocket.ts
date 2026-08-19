@@ -52,6 +52,7 @@ class WebSocketService {
     disconnect() {
         this.socket?.close();
         this.socket = null;
+        this.listeners = [];
     }
 }
 

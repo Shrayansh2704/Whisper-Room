@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ParticipantsDialog from "./ParticipantsDialog";
 interface Participant {
-    id: number;
+    id: string;
     name: string;
     admin: boolean;
 }

@@ -103,3 +103,8 @@ export interface IceCandidatePayload {
     candidate: IceCandidate;
 }
 
+export interface MessageReceivedPayload {
+    senderId: string;
+    senderName: string;
+    message: string;
+}
