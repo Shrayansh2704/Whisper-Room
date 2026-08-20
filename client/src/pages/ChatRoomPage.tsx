@@ -14,40 +14,54 @@ import {
     type MessageReceivedPayload,
 } from "@/types/message";
 
-interface ChatMessage {
-    id: number;
-    sender: string;
-    text: string;
-    time: string;
-}
+import type {
+    ChatMessage,
+    Participant,
+} from "@/types/chat";
 
-interface Participant {
-    id: string;
-    name: string;
-    admin: boolean;
-}
 
 
 function ChatRoomPage() {
     const { roomId } = useParams();
     const { state } = useLocation();
 
-    const username = state?.name ?? "Guest";
+    const routeState = state as
+        | {
+            roomId?: string;
+            name?: string;
+            userId?: string;
+            participants?: Participant[];
+            joined?: boolean;
+        }
+        | null;
+
+    const username = routeState?.name ?? "Guest";
+
+    const currentUserId = routeState?.userId ?? "";
     useEffect(() => {
         const handleMessage = (message: ServerMessage) => {
             switch (message.type) {
                 case MessageType.ROOM_JOINED: {
-                    console.log("Joined room:", message.payload);
+                    console.log(
+                        "Joined room:",
+                        message.payload
+                    );
                     break;
                 }
 
                 case MessageType.USER_JOINED: {
-                    const payload = message.payload as UserJoinedPayload;
+                    const payload =
+                        message.payload as UserJoinedPayload;
 
-                    // Add user to participants
+                    // Don't add yourself
+                    if (payload.id === currentUserId) {
+                        break;
+                    }
+
                     setParticipants((prev) => {
                         const alreadyExists = prev.some(
-                            (participant) => participant.id === payload.id
+                            (participant) =>
+                                participant.id === payload.id
                         );
 
                         if (alreadyExists) {
@@ -59,16 +73,15 @@ function ChatRoomPage() {
                             {
                                 id: payload.id,
                                 name: payload.name,
-                                admin: false,
+                                admin: payload.admin,
                             },
                         ];
                     });
 
-                    // Show join message in chat
                     setMessages((prev) => [
                         ...prev,
                         {
-                            id: Date.now(),
+                            id: Date.now().toString(),
                             sender: "System",
                             text: `${payload.name} joined the room`,
                             time: new Date().toLocaleTimeString([], {
@@ -82,12 +95,18 @@ function ChatRoomPage() {
                 }
 
                 case MessageType.MESSAGE_RECEIVED: {
-                    const payload = message.payload as MessageReceivedPayload;
+                    const payload =
+                        message.payload as MessageReceivedPayload;
+
+                    console.log(
+                        "MESSAGE PAYLOAD:",
+                        payload
+                    );
 
                     setMessages((prev) => [
                         ...prev,
                         {
-                            id: Date.now(),
+                            id: Date.now().toString(),
                             sender: payload.senderName,
                             text: payload.message,
                             time: new Date().toLocaleTimeString([], {
@@ -101,36 +120,38 @@ function ChatRoomPage() {
                 }
             }
         };
-
+        
         websocket.subscribe(handleMessage);
 
         return () => {
             websocket.unsubscribe(handleMessage);
         };
-    }, []);
+    }, [currentUserId]);
 
     const [messages, setMessages] = useState<ChatMessage[]>([
         {
-            id: 1,
+            id: "Welcome",
             sender: "System",
             text: `Welcome to room ${roomId}`,
             time: "Now",
+            system : true,
         },
     ]);
 
-    const [participants, setParticipants] = useState<Participant[]>([
-        {
-            id: "local",
-            name: username,
-            admin: true,
-        },
-    ]);
+    const [participants, setParticipants] =
+        useState<Participant[]>(
+            routeState?.participants ?? []
+        );
 
     const [message, setMessage] = useState("");
 
     const isAdmin = useMemo(
-        () => participants.find((p) => p.name === username)?.admin ?? false,
-        [participants, username]
+        () =>
+            participants.find(
+                (participant) =>
+                    participant.id === currentUserId
+            )?.admin ?? false,
+        [participants, currentUserId]
     );
 
     console.log("PARTICIPANTS:", participants);

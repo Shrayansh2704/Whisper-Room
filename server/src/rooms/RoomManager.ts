@@ -5,8 +5,10 @@ import { ServerMessage } from "../types/message.js";
 
 export class RoomManager {
     private rooms: Map<string, Room> = new Map();
+    private roomDeletionTimers: Map<string,ReturnType<typeof setTimeout>> = new Map();
 
-    createRoom(admin: User): string {
+    createRoom(admin: User): string | null{
+        if(admin.roomId) return null;
         let roomId = generateRoomId();
 
         while (this.rooms.has(roomId)) {
@@ -31,27 +33,83 @@ export class RoomManager {
         return this.rooms.get(roomId);
     }
 
-    joinRoom(roomId: string, user: User) : boolean{
+    getParticipants(roomId: string) {
+        const room = this.rooms.get(roomId);
+
+        if (!room) {
+            return [];
+        }
+
+        return [...room.users.values()].map((user) => ({
+            id: user.id,
+            name: user.name,
+            admin: user.id === room.adminId,
+        }));
+    }
+
+    joinRoom(
+        roomId: string,
+        user: User
+    ): "joined" | "already_joined" | "invalid" {
         const room = this.rooms.get(roomId);
 
         console.log("JOIN REQUEST:", roomId);
-        console.log("CURRENT ROOMS:", [...this.rooms.keys()]);
+        console.log(
+            "CURRENT ROOMS:",
+            [...this.rooms.keys()]
+        );
 
-        if (!room) return false;
+        if (!room) {
+            return "invalid";
+        }
+
+        if (
+            user.roomId === roomId &&
+            room.users.has(user.id)
+        ) {
+            return "already_joined";
+        }
+
+        if (user.roomId) {
+            return "invalid";
+        }
+
+        this.cancelDeletionTimer(roomId);
+
         user.roomId = roomId;
         room.users.set(user.id, user);
-        return true;
+
+        return "joined";
     }
 
-    broadcast(roomId: string, message: ServerMessage): boolean{
+    broadcast(
+        roomId: string,
+        message: ServerMessage
+    ): boolean {
+        return this.broadcastExcept(roomId, message);
+    }
+
+    broadcastExcept(
+        roomId: string,
+        message: ServerMessage,
+        excludedUserId?: string
+    ): boolean {
         const room = this.rooms.get(roomId);
 
-        if(!room) return false;
+        if (!room) {
+            return false;
+        }
 
         const data = JSON.stringify(message);
 
-        for(const user of room.users.values()){
-            user.socket.send(data);
+        for (const user of room.users.values()) {
+            if (user.id === excludedUserId) {
+                continue;
+            }
+
+            if (user.socket.readyState === user.socket.OPEN) {
+                user.socket.send(data);
+            }
         }
 
         return true;
@@ -112,8 +170,84 @@ export class RoomManager {
         };
     }
 
-    
+    disconnectUser(user: User): {
+        roomId: string;
+        newAdmin?: User;
+        deleted: boolean;
+    } | null {
+        if (!user.roomId) return null;
 
+        const room = this.rooms.get(user.roomId);
+        if (!room) return null;
+
+        const roomId = room.id;
+
+        room.users.delete(user.id);
+        user.roomId = undefined;
+
+        // Other users are still in the room
+        if (room.users.size > 0) {
+            if (room.adminId === user.id) {
+                const newAdmin = room.users.values().next().value as User;
+
+                room.adminId = newAdmin.id;
+
+                return {
+                    roomId,
+                    deleted: false,
+                    newAdmin,
+                };
+            }
+
+            return {
+                roomId,
+                deleted: false,
+            };
+        }
+
+        this.scheduleDeletion(roomId);
+        return {
+            roomId,
+            deleted: false,
+        };
+
+    }
+
+    private scheduleDeletion(roomId: string): void {
+        this.cancelDeletionTimer(roomId);
+
+        const timer = setTimeout(() => {
+            const currentRoom = this.rooms.get(roomId);
+
+            if (
+                currentRoom &&
+                currentRoom.users.size === 0
+            ) {
+                this.rooms.delete(roomId);
+
+                console.log(
+                    "ROOM Deleted After Disconnect:",
+                    roomId
+                );
+            }
+
+            this.roomDeletionTimers.delete(roomId);
+        }, 10000);
+
+        this.roomDeletionTimers.set(roomId, timer);
+    }
+
+    private cancelDeletionTimer(roomId: string): void {
+        const timer =
+            this.roomDeletionTimers.get(roomId);
+
+        if (!timer) {
+            return;
+        }
+
+        clearTimeout(timer);
+        this.roomDeletionTimers.delete(roomId);
+    }
 }
 
 export const roomManager = new RoomManager();

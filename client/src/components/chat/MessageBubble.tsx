@@ -1,9 +1,4 @@
-interface ChatMessage {
-    id: number;
-    sender: string;
-    text: string;
-    time: string;
-}
+import type { ChatMessage } from "@/types/chat";
 
 interface MessageBubbleProps {
     message: ChatMessage;

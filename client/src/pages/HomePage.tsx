@@ -15,6 +15,7 @@ import {
     type JoinRoomPayload,
     type ClientMessage,
     type ServerMessage,
+    type RoomStatePayload,
 } from "@/types/message";
 
 function HomePage() {
@@ -24,19 +25,18 @@ function HomePage() {
     const [roomId, setRoomId] = useState("");
 
     useEffect(() => {
-        websocket.connect();
-
         const listener = (message: ServerMessage) => {
             switch (message.type) {
                 case MessageType.ROOM_CREATED: {
-                    const { roomId } = message.payload as {
-                        roomId: string;
-                    };
+                    const payload = message.payload as RoomStatePayload;
 
-                    navigate(`/chat/${roomId}`, {
+                    navigate(`/chat/${payload.roomId}`, {
                         state: {
-                            roomId,
+                            roomId : payload.roomId,
                             name,
+                            userId : payload.userId,
+                            participants : payload.participants,
+                            joined : true,
                         },
                     });
 
@@ -44,14 +44,16 @@ function HomePage() {
                 }
 
                 case MessageType.ROOM_JOINED: {
-                    const { roomId } = message.payload as {
-                        roomId: string;
-                    };
+                    const payload =
+                        message.payload as RoomStatePayload;
 
-                    navigate(`/chat/${roomId}`, {
+                    navigate(`/chat/${payload.roomId}`, {
                         state: {
-                            roomId,
+                            roomId: payload.roomId,
                             name,
+                            userId: payload.userId,
+                            participants: payload.participants,
+                            joined: true,
                         },
                     });
 
@@ -59,17 +61,23 @@ function HomePage() {
                 }
 
                 case MessageType.ERROR:
-                    alert((message.payload as { message: string }).message);
+                    alert(
+                        (message.payload as { message: string }).message
+                    );
                     break;
             }
         };
 
         websocket.subscribe(listener);
 
+        websocket.connect().catch((error) => {
+            console.error("Failed to connect:", error);
+        });
+
         return () => {
             websocket.unsubscribe(listener);
         };
-    }, [navigate]);
+    }, [navigate, name]);
 
     const createRoom = async () => {
         if (!name.trim()) {
@@ -82,7 +90,7 @@ function HomePage() {
         const message: ClientMessage<CreateRoomPayload> = {
             type: MessageType.CREATE_ROOM,
             payload: {
-                name,
+                name : name.trim(),
             },
         };
 

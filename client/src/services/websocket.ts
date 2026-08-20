@@ -1,58 +1,151 @@
-import { type ClientMessage, type ServerMessage } from "@/types/message";
+import {
+    type ClientMessage,
+    type ServerMessage,
+} from "@/types/message";
 
 type MessageListener = (message: ServerMessage) => void;
 
 class WebSocketService {
     private socket: WebSocket | null = null;
-    private listeners: MessageListener[] = [];
+    private connectPromise: Promise<void> | null = null;
+    private listeners = new Set<MessageListener>();
+    
 
     async connect(): Promise<void> {
-    if (this.socket) return;
+        if (this.socket?.readyState === WebSocket.OPEN) {
+            return;
+        }
 
-    return new Promise((resolve, reject) => {
-        this.socket = new WebSocket("ws://localhost:3000");
+        if (this.connectPromise) {
+            return this.connectPromise;
+        }
 
-        this.socket.onopen = () => {
-            console.log("✅ Connected");
-            resolve();
-        };
+        const existingSocket = this.socket;
 
-        this.socket.onmessage = (event) => {
-            const message: ServerMessage = JSON.parse(event.data);
+        if (existingSocket?.readyState === WebSocket.CONNECTING) {
+            this.connectPromise = new Promise<void>((resolve, reject) => {
+                const checkConnection = () => {
+                    if (existingSocket.readyState === WebSocket.OPEN) {
+                        resolve();
+                    } else if (
+                        existingSocket.readyState === WebSocket.CLOSED ||
+                        existingSocket.readyState === WebSocket.CLOSING
+                    ) {
+                        reject(new Error("Failed to connect"));
+                    } else {
+                        window.setTimeout(checkConnection, 25);
+                    }
+                };
 
-            this.listeners.forEach((listener) => listener(message));
-        };
+                checkConnection();
+            }).finally(() => {
+                this.connectPromise = null;
+            });
 
-        this.socket.onclose = () => {
-            this.socket = null;
-        };
+            return this.connectPromise;
+        }
 
-        this.socket.onerror = () => {
-            reject(new Error("Failed to connect"));
-        };
-    });
-}
+        const url =
+            import.meta.env.VITE_WS_URL ??
+            "ws://localhost:3000";
 
-    send(message: ClientMessage) {
-        if (!this.socket) return;
+        this.connectPromise = new Promise<void>((resolve, reject) => {
+            const socket = new WebSocket(url);
+            let opened = false;
 
-        if (this.socket.readyState !== WebSocket.OPEN) return;
+            this.socket = socket;
+
+            socket.onopen = () => {
+                opened = true;
+                console.log("Connected");
+                resolve();
+            };
+
+            socket.onmessage = (event) => {
+                try {
+                    const message: ServerMessage =
+                        JSON.parse(event.data);
+
+                    this.listeners.forEach((listener) =>
+                        listener(message)
+                    );
+                } catch (error) {
+                    console.error(
+                        "Invalid WebSocket message:",
+                        error
+                    );
+                }
+            };
+
+            socket.onerror = () => {
+                console.error("WebSocket error");
+
+                if (!opened) {
+                    if (this.socket === socket) {
+                        this.socket = null;
+                    }
+
+                    reject(new Error("Failed to connect"));
+                    socket.close();
+                }
+            };
+
+            socket.onclose = () => {
+                console.log("Disconnected");
+
+                if (this.socket === socket) {
+                    this.socket = null;
+                }
+
+                if (!opened) {
+                    reject(new Error("Failed to connect"));
+                }
+            };
+        }).finally(() => {
+            this.connectPromise = null;
+        });
+
+        return this.connectPromise;
+    }
+
+    send(message: ClientMessage): boolean {
+        if (
+            !this.socket ||
+            this.socket.readyState !== WebSocket.OPEN
+        ) {
+            console.warn("WebSocket is not connected");
+            return false;
+        }
 
         this.socket.send(JSON.stringify(message));
+        return true;
     }
 
-    subscribe(listener: MessageListener) {
-        this.listeners.push(listener);
+    subscribe(listener: MessageListener): () => void {
+        this.listeners.add(listener);
+
+        return () => {
+            this.listeners.delete(listener);
+        };
     }
 
-    unsubscribe(listener: MessageListener) {
-        this.listeners = this.listeners.filter(l => l !== listener);
+    unsubscribe(listener: MessageListener): void {
+        this.listeners.delete(listener);
     }
 
-    disconnect() {
-        this.socket?.close();
+    disconnect(): void {
+        const socket = this.socket;
+
         this.socket = null;
-        this.listeners = [];
+        this.connectPromise = null;
+
+        if (
+            socket &&
+            socket.readyState !== WebSocket.CLOSED &&
+            socket.readyState !== WebSocket.CLOSING
+        ) {
+            socket.close();
+        }
     }
 }
 

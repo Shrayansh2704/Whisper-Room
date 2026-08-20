@@ -1,12 +1,14 @@
-interface ChatMessage {
-    id: number;
+export interface ChatMessage {
+    id: string;
+    senderId?: string;
     sender: string;
     text: string;
     time: string;
+    system?: boolean;
 }
 
-interface Participant {
-    id: number;
+export interface Participant {
+    id: string;
     name: string;
     admin: boolean;
 }

@@ -55,6 +55,14 @@ export interface JoinRoomPayload{
 export interface UserJoinedPayload {
     id: string;
     name: string;
+    admin: boolean;
+}
+
+export interface MessageReceivedPayload {
+    messageId: string;
+    senderId: string;
+    senderName: string;
+    message: string;
 }
 
 
@@ -98,6 +106,18 @@ export interface IceCandidate {
 export interface IceCandidatePayload{
     targetUserId : string;
     candidate : IceCandidate;
+}
+
+export interface RoomParticipantPayload {
+    id: string;
+    name: string;
+    admin: boolean;
+}
+
+export interface RoomStatePayload {
+    roomId: string;
+    userId: string;
+    participants: RoomParticipantPayload[];
 }
 
 
