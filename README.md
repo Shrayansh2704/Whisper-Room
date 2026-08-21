@@ -74,27 +74,125 @@ Communication is based on typed message events such as:
 - WebSocket (`ws`)
 - HTTP Server
 
-### Architecture
+---
 
-The application follows a client-server architecture:
+## Architecture
 
-```text
-┌─────────────────────┐
-│      React Client   │
-│                     │
-│  Chat UI            │
-│  Room UI            │
-│  Participant UI     │
-└──────────┬──────────┘
-           │
-           │ WebSocket
-           │
-           ▼
-┌─────────────────────┐
-│    Node.js Server   │
-│                     │
-│ WebSocket Server    │
-│ Message Handler     │
-│ User Manager        │
-│ Room Manager        │
-└─────────────────────┘
+The application follows a client-server architecture.
+
+    React Client
+        |
+        | WebSocket
+        |
+        v
+    Node.js Server
+        |
+        +-- WebSocket Server
+        +-- Message Handler
+        +-- User Manager
+        +-- Room Manager
+
+---
+
+## Version 1
+
+The current version focuses on real-time text communication and room management.
+
+### Completed
+
+- Room creation
+- Room joining
+- Real-time messaging
+- Participant management
+- Join and leave notifications
+- Admin system
+- Kick user functionality
+- Disconnect handling
+- System messages
+- WebSocket-based communication
+
+---
+
+# Version 2
+
+Version 2 is planned to extend Whisper Room from a real-time text chat application into a real-time voice and video communication platform.
+
+### Planned Features
+
+- WebRTC voice calling
+- WebRTC video calling
+- Screen sharing
+- Microphone controls
+- Camera controls
+- Multi-user meetings
+- Persistent database
+- User authentication
+- Message history
+- Production deployment
+
+### WebRTC
+
+WebRTC will be used for real-time audio and video communication between participants.
+
+The existing WebSocket architecture will be used as the signaling layer for exchanging WebRTC information such as:
+
+- `OFFER`
+- `ANSWER`
+- `ICE_CANDIDATE`
+
+The existing room and participant management system will be reused in Version 2.
+
+---
+
+## Version 2 Architecture
+
+    Whisper Room
+         |
+         | WebSocket
+         | Signaling
+         |
+    +----+----+
+    |         |
+   User A   User B
+    |         |
+    +---WebRTC---+
+       Audio
+       Video
+
+---
+
+## Roadmap
+
+### Version 1
+
+- [x] Room creation
+- [x] Room joining
+- [x] Real-time messaging
+- [x] Participant management
+- [x] Join/leave notifications
+- [x] Admin system
+- [x] Kick user functionality
+- [x] Disconnect handling
+- [x] System messages
+
+### Version 2
+
+- [ ] WebRTC integration
+- [ ] Voice calling
+- [ ] Video calling
+- [ ] Screen sharing
+- [ ] Multi-user meetings
+- [ ] Persistent database
+- [ ] Authentication
+- [ ] Message history
+- [ ] Production deployment
+
+---
+
+## Project Status
+
+**Version 1: Completed**
+
+**Version 2: Planned**
+
+The current release provides real-time text communication using WebSockets. Version 2 will introduce WebRTC-based voice and video communication.
