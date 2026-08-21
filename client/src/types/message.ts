@@ -12,7 +12,6 @@ export const MessageType = {
 
     LEAVE_ROOM: "LEAVE_ROOM",
     ROOM_LEFT: "ROOM_LEFT",
-    DESTROY_ROOM: "DESTROY_ROOM",
 
     SEND_MESSAGE: "SEND_MESSAGE",
     MESSAGE_RECEIVED: "MESSAGE_RECEIVED",
@@ -21,7 +20,6 @@ export const MessageType = {
     USER_KICKED: "USER_KICKED",
     KICK_SUCCESS: "KICK_SUCCESS",
 
-    TRANSFER_ADMIN: "TRANSFER_ADMIN",
 
     ADMIN_CHANGED: "ADMIN_CHANGED",
 
@@ -63,11 +61,7 @@ export interface RoomParticipantPayload {
 export interface RoomStatePayload {
     roomId: string;
     userId: string;
-    participants: {
-        id: string;
-        name: string;
-        admin: boolean;
-    }[];
+    participants: RoomParticipantPayload[];
 }
 
 export interface UserJoinedPayload {

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import ChatInput from "@/components/chat/ChatInput";
 import { Card } from "@/components/ui/card";
 import ChatMessages from "@/components/chat/ChatMessages";
@@ -12,6 +12,9 @@ import {
     type ServerMessage,
     type UserJoinedPayload,
     type MessageReceivedPayload,
+    type UserLeftPayload,
+    type AdminChangedPayload,
+    
 } from "@/types/message";
 
 import type {
@@ -22,6 +25,7 @@ import type {
 
 
 function ChatRoomPage() {
+    const navigate = useNavigate();
     const { roomId } = useParams();
     const { state } = useLocation();
 
@@ -118,6 +122,76 @@ function ChatRoomPage() {
 
                     break;
                 }
+
+                case MessageType.USER_LEFT: {
+                    const payload =
+                        message.payload as UserLeftPayload;
+
+                    setParticipants((prev) =>
+                        prev.filter(
+                            (participant) =>
+                                participant.id !== payload.id
+                        )
+                    );
+
+                    setMessages((prev) => [
+                        ...prev,
+                        {
+                            id: Date.now().toString(),
+                            sender: "System",
+                            text: `${payload.name} left the room`,
+                            time: new Date().toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                            }),
+                            system: true,
+                        },
+                    ]);
+
+                    break;
+                }
+
+                case MessageType.ADMIN_CHANGED: {
+                    const payload =
+                        message.payload as AdminChangedPayload;
+
+                    setParticipants((prev) =>
+                        prev.map((participant) => ({
+                            ...participant,
+                            admin:
+                                participant.id === payload.id,
+                        }))
+                    );
+
+                    setMessages((prev) => [
+                        ...prev,
+                        {
+                            id: Date.now().toString(),
+                            sender: "System",
+                            text: `${payload.name} is now the admin`,
+                            time: new Date().toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                            }),
+                            system: true,
+                        },
+                    ]);
+
+                    break;
+                }
+
+                case MessageType.USER_KICKED: {
+                    console.log("You were kicked from the room");
+
+                    navigate("/");
+                    break;
+                }
+
+                case MessageType.ROOM_LEFT: {
+                    console.log("Successfully left room");
+                    navigate("/");
+                    break;
+                }
             }
         };
         
@@ -138,10 +212,7 @@ function ChatRoomPage() {
         },
     ]);
 
-    const [participants, setParticipants] =
-        useState<Participant[]>(
-            routeState?.participants ?? []
-        );
+    const [participants, setParticipants] =useState<Participant[]>(routeState?.participants ?? []);
 
     const [message, setMessage] = useState("");
 
@@ -177,6 +248,7 @@ function ChatRoomPage() {
                 roomId={roomId ?? ""}
                 participants={participants}
                 isAdmin={isAdmin}
+                currentUserId={currentUserId}
             />
 
             {/* Chat */}

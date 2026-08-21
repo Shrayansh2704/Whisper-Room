@@ -10,6 +10,9 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 
+import websocket from "@/services/websocket";
+import { MessageType } from "@/types/message";
+
 interface Participant {
     id: string;
     name: string;
@@ -18,11 +21,25 @@ interface Participant {
 
 interface ParticipantsDialogProps {
     participants: Participant[];
+    isAdmin: boolean;
+    currentUserId: string;
 }
 
 function ParticipantsDialog({
     participants,
+    isAdmin,
+    currentUserId,
 }: ParticipantsDialogProps) {
+
+    const handleKick = (userId: string) => {
+        websocket.send({
+            type: MessageType.KICK_USER,
+            payload: {
+                userId,
+            },
+        });
+    };
+
     return (
         <Dialog>
             <DialogTrigger
@@ -57,12 +74,30 @@ function ParticipantsDialog({
                                     </AvatarFallback>
                                 </Avatar>
 
-                                <span>{user.name ?? "Unknown User"}</span>
+                                <span>
+                                    {user.name ?? "Unknown User"}
+                                </span>
                             </div>
 
-                            {user.admin && (
-                                <Crown className="h-5 w-5 text-yellow-400" />
-                            )}
+                            <div className="flex items-center gap-2">
+                                {user.admin && (
+                                    <Crown className="h-5 w-5 text-yellow-400" />
+                                )}
+
+                                {isAdmin &&
+                                    user.id !== currentUserId &&
+                                    !user.admin && (
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() =>
+                                                handleKick(user.id)
+                                            }
+                                        >
+                                            Kick
+                                        </Button>
+                                    )}
+                            </div>
                         </div>
                     ))}
                 </div>

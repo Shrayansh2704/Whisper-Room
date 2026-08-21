@@ -184,7 +184,7 @@ export function handleMessage(
                 );
                 break ;
             }
-
+            console.log(`${user.name} Left Room: ${result.roomId}`);
             socket.send(
                 JSON.stringify({
                     type : MessageType.ROOM_LEFT,
